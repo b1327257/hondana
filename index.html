@@ -1,0 +1,2473 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#7c4a24" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>ほんだな</title>
+  <script>(function(){try{if(Math.min(screen.width,screen.height)<600)document.documentElement.classList.add('phone');}catch(e){}})();</script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    :root {
+      --wood-bg: #f6efe6;
+      --wood-plank-top: #d69e66;
+      --wood-plank-front: #b5763c;
+      --wood-plank-bottom: #7c4a21;
+      --wood-wall: #efe3d2;
+      --wood-rail: #8d5528;
+      --text-main: #3d2616;
+      --card-shadow: rgba(61, 38, 22, 0.28);
+    }
+
+    body.theme-white {
+      --wood-bg: #f8fafc;
+      --wood-plank-top: #e2e8f0;
+      --wood-plank-front: #cbd5e1;
+      --wood-plank-bottom: #94a3b8;
+      --wood-wall: #f1f5f9;
+      --wood-rail: #64748b;
+      --text-main: #1e293b;
+      --card-shadow: rgba(15, 23, 42, 0.18);
+    }
+
+    body.theme-night {
+      --wood-bg: #18141c;
+      --wood-plank-top: #4b3429;
+      --wood-plank-front: #36231b;
+      --wood-plank-bottom: #1f130e;
+      --wood-wall: #221c28;
+      --wood-rail: #2c1b14;
+      --text-main: #f5ebe1;
+      --card-shadow: rgba(0, 0, 0, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      font-family: "Inter", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Yu Gothic", "Meiryo", sans-serif;
+      background-color: var(--wood-bg);
+      color: var(--text-main);
+      overflow-x: hidden;
+      overflow-y: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Keep vertical scrolling active even in fullscreen mode on Fire HD 10 */
+    html:fullscreen,
+    body:fullscreen,
+    html:-webkit-full-screen,
+    body:-webkit-full-screen {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: 100%;
+    }
+
+    /* Wooden Bookshelf Row Styling */
+    .shelf-unit {
+      background: linear-gradient(180deg, var(--wood-wall) 0%, var(--wood-bg) 88%);
+      border-left: 12px solid var(--wood-plank-front);
+      border-right: 12px solid var(--wood-plank-front);
+      box-shadow: inset 0 10px 22px rgba(0, 0, 0, 0.08);
+      position: relative;
+      padding: 22px 18px 0 18px;
+    }
+
+    .shelf-plank {
+      height: 24px;
+      margin-left: -18px;
+      margin-right: -18px;
+      position: relative;
+      background: linear-gradient(180deg, var(--wood-plank-top) 0%, var(--wood-plank-top) 32%, var(--wood-plank-front) 33%, var(--wood-plank-bottom) 100%);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22), inset 0 2px 2px rgba(255, 255, 255, 0.35);
+      border-radius: 2px;
+      z-index: 5;
+    }
+
+    .shelf-rail {
+      position: absolute;
+      bottom: 24px;
+      left: 0;
+      right: 0;
+      height: 11px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, var(--wood-rail) 100%);
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.18);
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    /* 3D Picture Book Cover Card */
+    .book-item {
+      position: relative;
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
+      transform-origin: bottom center;
+      cursor: pointer;
+      z-index: 4;
+    }
+
+    .book-item:hover,
+    .book-item:active {
+      transform: translateY(-8px) scale(1.03);
+      z-index: 10;
+    }
+
+    .book-cover-frame {
+      position: relative;
+      border-radius: 5px 9px 9px 5px;
+      background: #fff;
+      box-shadow:
+        -4px 4px 10px var(--card-shadow),
+        3px 2px 0 #ebe5dc,
+        6px 4px 0 #dcd3c6,
+        7px 7px 14px var(--card-shadow);
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    /* Natural Fit Mode: Preserves each book's real size/proportion (portrait, square, or landscape) */
+    .book-cover-frame.fit-natural {
+      display: inline-block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+    }
+
+    .book-cover-frame.fit-natural .book-cover-img {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: var(--shelf-book-max-h, 220px);
+      object-fit: contain;
+      background: #f5efe6;
+    }
+
+    /* Cropped / Adjusted Mode: Uses user-selected aspect frame & position/zoom */
+    .book-cover-frame.fit-crop {
+      width: 100%;
+    }
+
+    .book-cover-frame.fit-crop .book-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #f5efe6;
+      transform-origin: center center;
+    }
+
+    /* Realistic book spine crease on left edge */
+    .book-cover-frame::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 12px;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.26) 0%,
+        rgba(255, 255, 255, 0.32) 35%,
+        rgba(0, 0, 0, 0.10) 65%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Reader Spread & Gutter Shadow */
+    .reader-stage {
+      background: radial-gradient(circle at center, #2b2320 0%, #14100e 100%);
+    }
+
+    .book-spread-container {
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      border-radius: 6px;
+      position: relative;
+      background: transparent;
+    }
+
+    .spread-gutter {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 28px;
+      transform: translateX(-50%);
+      background: linear-gradient(
+        90deg,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0.12) 38%,
+        rgba(0,0,0,0.32) 50%,
+        rgba(255,255,255,0.18) 54%,
+        rgba(0,0,0,0.10) 65%,
+        rgba(0,0,0,0) 100%
+      );
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* Dropzone active overlay */
+    .drop-active {
+      outline: 4px dashed #f59e0b;
+      outline-offset: -12px;
+    }
+
+    /* Custom Scrollbar for horizontal thumbnail bar */
+    .thumb-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    .thumb-scroll::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+    }
+    .thumb-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.35);
+      border-radius: 4px;
+    }
+
+    /* iOS Safari で入力欄が打てなくなるのを防ぐ */
+    input, textarea { user-select: text; -webkit-user-select: text; }
+    button { touch-action: manipulation; }
+    .fs-toggle.fs-on { background-color: rgba(127, 29, 29, 0.92) !important; }
+
+    /* ===== スマホ最適化（画面の短辺が600px未満） ===== */
+    html.phone .fs-only { display: none !important; }   /* 全画面はタブレット専用 */
+    html.phone .lbl { display: none !important; }       /* ボタンはアイコンのみ */
+    html.phone .app-title-logo { display: none; }
+    html.phone .shelf-unit { border-left-width: 6px; border-right-width: 6px; padding: 14px 10px 0 10px; }
+    html.phone .shelf-plank { margin-left: -10px; margin-right: -10px; height: 18px; }
+    html.phone .shelf-rail { bottom: 18px; }
+    html.phone .shelf-unit > .grid { min-height: 150px !important; }
+    html.phone [data-action="toggle-fav"],
+    html.phone [data-action="edit-book"] { width: 34px !important; height: 34px !important; }
+    @media (orientation: landscape) {
+      html.phone header.app-header { position: static; }   /* 横持ちは縦の余白を優先 */
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Hidden File Input for PDF Selection -->
+  <input id="pdfFileInput" type="file" accept="application/pdf,.pdf" multiple class="hidden" />
+  <!-- Hidden File Input for Backup Restore -->
+  <input id="backupFileInput" type="file" class="hidden" />
+
+  <!-- Top Header Navigation -->
+  <header class="app-header sticky top-0 z-30 bg-amber-900/95 text-amber-50 shadow-lg backdrop-blur border-b border-amber-700/60">
+    <div class="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex flex-wrap sm:flex-nowrap items-center gap-2">
+      <!-- App Title & Counter -->
+      <div class="flex items-center gap-3 min-w-0 basis-full sm:basis-auto sm:flex-1">
+        <div class="app-title-logo shrink-0 w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center text-2xl shadow-inner border border-amber-300/60" aria-hidden="true">
+          📚
+        </div>
+        <div class="flex items-center gap-2.5">
+          <h1 id="appTitle" class="text-lg sm:text-2xl font-extrabold tracking-tight leading-none truncate">ほんだな</h1>
+          <span id="titleEditHint" class="parent-only-control text-amber-300/80 text-sm cursor-pointer" title="本棚のなまえを変える">✎</span>
+          <span id="totalBooksBadge" class="text-xs font-bold bg-amber-700/90 text-amber-100 px-2.5 py-0.5 rounded-full border border-amber-500/40">
+            0さつ
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 flex-wrap justify-end ml-auto">
+        <!-- Add PDF Button (Hidden in Child Mode) -->
+        <button id="btnOpenAddModal" type="button" class="parent-only-control flex items-center gap-2 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl shadow-md border border-emerald-300/40 text-sm sm:text-base transition">
+          <span class="text-lg leading-none">＋</span>
+          <span class="lbl">PDF絵本を追加</span>
+        </button>
+
+        <!-- Shelf Size Toggle (Large -> Normal -> Small) -->
+        <button id="btnToggleShelfSize" type="button" class="flex items-center gap-1.5 bg-amber-800/90 hover:bg-amber-700 active:scale-95 text-amber-100 font-semibold px-3 py-2.5 rounded-xl border border-amber-600/40 text-xs sm:text-sm transition" title="表紙のサイズを切り替え">
+          <span>🔍</span>
+          <span id="shelfSizeLabel" class="lbl">表紙: おおきめ</span>
+        </button>
+
+        <!-- Theme Switcher -->
+        <button id="btnCycleTheme" type="button" class="flex items-center gap-1.5 bg-amber-800/90 hover:bg-amber-700 active:scale-95 text-amber-100 font-semibold px-3 py-2.5 rounded-xl border border-amber-600/40 text-xs sm:text-sm transition" title="本棚のテーマを切り替え">
+          <span id="themeIcon">🌲</span>
+          <span id="themeLabel" class="hidden lg:inline">木目</span>
+        </button>
+
+        <!-- Child Mode Lock Button (2-second long press to unlock back to Adult Mode) -->
+        <button id="btnToggleChildMode" type="button" class="relative overflow-hidden flex items-center gap-1.5 bg-amber-950/80 hover:bg-amber-950 text-amber-200 font-bold px-3.5 py-2.5 rounded-xl border border-amber-600/50 text-xs sm:text-sm transition select-none">
+          <span id="childHoldProgressBar" class="absolute left-0 top-0 bottom-0 bg-emerald-500/45 pointer-events-none" style="width: 0%;"></span>
+          <span id="childModeIcon" class="relative z-10">🔒</span>
+          <span id="childModeText" class="relative z-10 lbl">こどもモードちゅう</span>
+        </button>
+
+        <!-- Settings (Hidden in Child Mode) -->
+        <button id="btnOpenSettingsModal" type="button" class="parent-only-control flex items-center justify-center w-10 h-10 rounded-xl bg-amber-800/90 hover:bg-amber-700 active:scale-95 text-amber-100 border border-amber-600/40 text-lg transition" title="設定・データ管理">
+          ⚙️
+        </button>
+      </div>
+
+      <!-- 全画面ボタン：右上固定（タブレットのみ。解除は同じ場所を2回タップ） -->
+      <button id="btnFullscreenApp" type="button" class="fs-toggle fs-only shrink-0 flex items-center justify-center gap-1.5 min-w-[104px] bg-amber-800/90 hover:bg-amber-700 active:scale-95 text-amber-100 font-semibold px-3 py-2.5 rounded-xl border border-amber-600/40 text-xs sm:text-sm transition" title="全画面表示（解除は同じ場所を2回タップ）">
+        <span class="fs-icon">⛶</span>
+        <span class="fs-label">全画面</span>
+      </button>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="bg-amber-950/60 border-t border-amber-800/70 px-3 sm:px-5 py-2">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+        <!-- Category Pills: Only All & Favorites -->
+        <div id="categoryFilterBar" class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button type="button" data-filter="all" id="filterTabAll" class="filter-tab bg-amber-400 text-amber-950 font-extrabold px-3.5 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap shadow-sm transition">
+            すべて
+          </button>
+          <button type="button" data-filter="fav" id="filterTabFav" class="filter-tab bg-amber-900/70 hover:bg-amber-800 text-amber-100 font-bold px-3.5 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition">
+            ★ お気に入り
+          </button>
+        </div>
+
+        <!-- Search & Sort Controls -->
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div class="relative flex-1 sm:w-52">
+            <input id="searchInput" type="search" placeholder="えほんのタイトルでさがす..." class="w-full bg-amber-900/80 text-amber-50 placeholder-amber-300/60 text-xs sm:text-sm rounded-xl pl-8 pr-3 py-1.5 border border-amber-700 focus:outline-none focus:border-amber-400" />
+            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-300 text-xs pointer-events-none">🔎</span>
+          </div>
+          <select id="sortSelect" aria-label="ならびかえ" class="bg-amber-900/80 text-amber-100 text-xs sm:text-sm rounded-xl px-2.5 py-1.5 border border-amber-700 focus:outline-none focus:border-amber-400">
+            <option id="sortOptRecent" value="recent">さいきん読んだ順</option>
+            <option id="sortOptAdded" value="added">追加した順</option>
+            <option id="sortOptTitle" value="title">あいうえお順</option>
+            <option id="sortOptCount" value="count">よく読む順</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Bookshelf Content -->
+  <main id="mainDropZone" class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-5 py-4 sm:py-6 flex flex-col gap-4">
+
+    <!-- Bookshelf Container (Automatically adds rows as more books are added) -->
+    <section id="bookshelfContainer" aria-label="えほんのほんだな" class="rounded-2xl overflow-hidden shadow-2xl border-4 border-amber-900/80">
+      <!-- Dynamically populated shelf rows -->
+    </section>
+
+    <!-- Empty Shelf State -->
+    <div id="emptyShelfState" class="hidden bg-white/80 rounded-3xl p-8 sm:p-12 text-center border-2 border-dashed border-amber-400 my-4 max-w-xl mx-auto">
+      <div class="text-5xl mb-3">📭</div>
+      <h2 id="emptyShelfTitle" class="text-lg sm:text-xl font-extrabold text-amber-950 mb-2">この棚にはまだ絵本がありません</h2>
+      <p id="emptyShelfDesc" class="text-sm text-amber-800 mb-5">
+        条件に合う絵本が見つからないか、まだPDF絵本が追加されていません。
+      </p>
+      <div class="flex flex-wrap justify-center gap-3">
+        <button id="btnEmptyResetFilter" type="button" class="bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold px-4 py-2.5 rounded-xl text-sm transition">
+          すべての絵本を表示
+        </button>
+        <button id="btnEmptyAddPdf" type="button" class="parent-only-control bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow transition">
+          ＋ PDF絵本を追加する
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- FULLSCREEN PICTURE BOOK READER OVERLAY                                -->
+  <!-- ===================================================================== -->
+  <div id="readerOverlay" class="fixed inset-0 z-50 hidden flex-col reader-stage text-white select-none">
+
+    <!-- Reader Top Bar -->
+    <div id="readerTopBar" class="bg-stone-900/90 backdrop-blur border-b border-stone-700/70 px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2 z-20">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <button id="btnCloseReader" type="button" class="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs sm:text-sm shadow transition">
+          <span>🏠</span>
+          <span id="closeReaderLabel" class="lbl">本棚にもどる</span>
+        </button>
+        <div class="truncate">
+          <h2 id="readerBookTitle" class="font-extrabold text-sm sm:text-lg text-amber-100 truncate">えほん</h2>
+          <p id="readerPageIndicator" class="text-xs text-stone-300">1 / 1 ページ</p>
+        </div>
+      </div>
+
+      <!-- Reader Mode Controls -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <!-- Zoom Toggle -->
+        <button id="btnCycleZoom" type="button" class="bg-stone-800 hover:bg-stone-700 active:scale-95 text-stone-100 font-semibold px-2.5 py-2 rounded-xl border border-stone-600 text-xs sm:text-sm transition" title="拡大表示">
+          <span id="zoomBtnLabel">🔍 100%</span>
+        </button>
+
+        <!-- Fullscreen inside Reader (Double-tap required to exit) -->
+        <button id="btnReaderFullscreen" type="button" class="fs-toggle fs-only flex items-center justify-center gap-1.5 min-w-[104px] bg-stone-800 hover:bg-stone-700 active:scale-95 text-stone-200 font-semibold px-2.5 py-2 rounded-xl border border-stone-600 text-xs sm:text-sm transition" title="全画面表示（解除は同じ場所を2回タップ）">
+          <span class="fs-icon">⛶</span>
+          <span class="fs-label">全画面</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Reader Main Canvas Stage -->
+    <div id="readerViewport" class="relative flex-1 min-h-0 flex overflow-auto p-2 sm:p-4">
+
+      <!-- Book Canvas Wrapper (Double-Buffered for Zero White Flash) -->
+      <div id="bookSpreadWrapper" class="book-spread-container m-auto shrink-0">
+        <canvas id="pdfCanvasPrimary" class="block rounded"></canvas>
+      </div>
+
+      <!-- Loading Spinner inside Reader (Only shown on initial book open) -->
+      <div id="readerLoadingSpinner" class="hidden absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-40">
+        <div class="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <p id="readerLoadingText" class="text-sm sm:text-base font-bold text-amber-100">ページを ひらいています...</p>
+      </div>
+    </div>
+
+    <!-- Reader Bottom Scrubber & Page Bar -->
+    <div id="readerBottomBar" class="bg-stone-900/90 backdrop-blur border-t border-stone-700/70 px-3 sm:px-6 py-2.5 z-20">
+      <div class="max-w-5xl mx-auto flex flex-col gap-2">
+        <!-- Page Dots / Quick Jump Buttons -->
+        <div id="readerPageDots" class="thumb-scroll flex items-center justify-center gap-1.5 overflow-x-auto py-1">
+          <!-- Populated dynamically -->
+        </div>
+        <div class="flex items-center justify-between text-xs text-stone-300">
+          <button id="btnRestartBook" type="button" class="hover:text-amber-300 font-bold flex items-center gap-1 py-1 px-2 rounded-lg bg-stone-800/80">
+            <span>⏮</span>
+            <span id="restartBookLabel">さいしょのページへ</span>
+          </button>
+          <span id="readerDirectionHint" class="lbl text-amber-200/90 font-semibold">
+            左右にスワイプしてページをめくれます
+          </span>
+          <button id="btnReaderFavorite" type="button" class="hover:text-amber-300 font-bold flex items-center gap-1 py-1 px-2.5 rounded-lg bg-stone-800/80">
+            <span id="readerFavIcon">☆</span>
+            <span id="readerFavLabel">お気に入り</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- End-of-Book Hanamaru Celebration Modal -->
+    <div id="finishBookModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-amber-50 text-amber-950 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl border-4 border-amber-400">
+        <div class="text-6xl mb-2 animate-bounce">💮</div>
+        <h3 class="text-2xl font-black text-amber-900 mb-1">おしまい！</h3>
+        <p id="finishBookMessage" class="text-sm text-amber-800 font-bold mb-5">
+          さいごまで よめたね！ よく がんばったね！
+        </p>
+        <div class="bg-white rounded-2xl p-4 mb-5 border border-amber-200 shadow-inner">
+          <p id="finishReadCountLabel" class="text-xs text-amber-700 font-bold">この えほんを よんだ かいすう</p>
+          <p id="finishReadCount" class="text-3xl font-black text-emerald-600 mt-1">1 かい</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button id="btnFinishReadAgain" type="button" class="flex-1 bg-amber-200 hover:bg-amber-300 active:scale-95 text-amber-950 font-extrabold py-3 px-4 rounded-2xl text-sm transition">
+            <span id="finishReadAgainLabel">🔄 もういちど よむ</span>
+          </button>
+          <button id="btnFinishBackShelf" type="button" class="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold py-3 px-4 rounded-2xl text-sm shadow-md transition">
+            <span id="finishBackShelfLabel">🏠 ほんだなに もどる</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: ADD PDF PICTURE BOOKS                                          -->
+  <!-- ===================================================================== -->
+  <div id="addPdfModal" class="hidden fixed inset-0 z-40 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-amber-50 text-amber-950 rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border-4 border-amber-700 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">📥</span>
+          <h2 class="text-lg sm:text-xl font-extrabold">スキャンしたPDF絵本を本棚に並べる</h2>
+        </div>
+        <button id="btnCloseAddModal" type="button" class="w-9 h-9 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold text-lg flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <!-- Dropzone / File Picker Card -->
+      <div id="modalDropArea" class="bg-white hover:bg-amber-100/50 border-3 border-dashed border-amber-500 rounded-2xl p-6 text-center cursor-pointer transition mb-5">
+        <div class="text-4xl mb-2">📄✨</div>
+        <p class="font-extrabold text-base sm:text-lg text-amber-950 mb-1">
+          ここをタップしてPDFファイルを選択（複数まとめてOK）
+        </p>
+        <p class="text-xs sm:text-sm text-amber-700 mb-4">
+          本の縦横サイズ（正方形・横長・縦長）に合わせて表紙全体をきれいに飾ります
+        </p>
+        <button id="btnModalPickFiles" type="button" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold px-6 py-3 rounded-xl shadow-md text-sm sm:text-base transition">
+          📂 端末内のPDFファイルをえらぶ
+        </button>
+      </div>
+
+      <!-- Default Import Options for Scanned PDFs -->
+      <div class="bg-amber-100/80 rounded-2xl p-4 border border-amber-300 space-y-3">
+        <h3 class="font-bold text-sm text-amber-950">📌 追加するPDFの初期設定（あとから各本の「✎」でも調整できます）</h3>
+        <div class="text-xs sm:text-sm">
+          <label for="defaultDirectionSelect" class="block font-bold text-amber-900 mb-1">ページをめくる方向</label>
+          <select id="defaultDirectionSelect" class="w-full bg-white text-amber-950 rounded-xl px-3 py-2 border border-amber-400 font-semibold">
+            <option value="rtl">◀ 右開き（日本の縦書き絵本に最適）</option>
+            <option value="ltr">▶ 左開き（英語・横書き絵本に最適）</option>
+          </select>
+        </div>
+
+        <div class="pt-1 border-t border-amber-200/80">
+          <label for="defaultCoverModeSelect" class="block font-bold text-amber-900 mb-1 text-xs sm:text-sm">本棚での表紙のうつり方</label>
+          <select id="defaultCoverModeSelect" class="w-full bg-white text-amber-950 rounded-xl px-3 py-2 border border-amber-400 font-semibold text-xs sm:text-sm">
+            <option value="fit">📖 表紙全体を表示（本の縦横サイズをそのまま反映・おすすめ）</option>
+            <option value="right">👉 1ページ目の右半分を表示（見開きスキャンで表紙が右にある場合）</option>
+            <option value="left">👈 1ページ目の左半分を表示（見開きスキャンで表紙が左にある場合）</option>
+            <option value="custom_after">✂️ 追加した直後に表紙の表示位置・切り抜きを調整する</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Import Progress Indicator -->
+      <div id="importProgressBox" class="hidden mt-4 bg-emerald-900 text-emerald-50 rounded-2xl p-4">
+        <div class="flex items-center justify-between text-xs sm:text-sm font-bold mb-1.5">
+          <span id="importProgressText">PDFから表紙を作成中...</span>
+          <span id="importProgressPercent">0%</span>
+        </div>
+        <div class="w-full h-3 bg-emerald-950 rounded-full overflow-hidden">
+          <div id="importProgressBar" class="h-full bg-emerald-400 transition-all duration-200" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: EDIT BOOK SETTINGS & COVER POSITION / CROP ADJUSTER            -->
+  <!-- ===================================================================== -->
+  <div id="editBookModal" class="hidden fixed inset-0 z-40 bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-amber-50 text-amber-950 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border-4 border-amber-700 max-h-[94vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-base sm:text-lg font-extrabold flex items-center gap-2">
+          <span>✏️</span>
+          <span>絵本の表紙調整・読み方設定</span>
+        </h2>
+        <button id="btnCloseEditModal" type="button" class="w-8 h-8 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs sm:text-sm">
+        <!-- Cover Position & Size Adjuster Card -->
+        <div class="bg-amber-100/90 rounded-2xl p-3.5 border border-amber-300">
+          <label class="block font-extrabold text-amber-950 mb-2">🖼️ 本棚での表紙のうつり方・位置調整</label>
+
+          <!-- Live Preview Stage -->
+          <div class="flex flex-col sm:flex-row items-center gap-4 bg-amber-50/90 rounded-xl p-3 border border-amber-200 mb-3">
+            <div class="w-36 h-40 flex items-end justify-center bg-gradient-to-b from-amber-100/60 to-amber-200/70 rounded-lg p-2 border-b-8 border-amber-700 shrink-0 overflow-hidden">
+              <div id="editCoverPreviewFrame" class="book-cover-frame fit-natural">
+                <img id="editCoverPreviewImg" src="" alt="表紙プレビュー" class="book-cover-img" style="--shelf-book-max-h: 132px;" />
+              </div>
+            </div>
+
+            <!-- Preset Mode Buttons -->
+            <div class="flex-1 w-full space-y-2">
+              <p class="text-[11px] text-amber-800 font-bold">表示モードをえらぶ：</p>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" data-cover-preset="fit" class="cover-preset-btn px-2.5 py-2 rounded-xl font-bold text-xs border border-amber-400 bg-white hover:bg-amber-200/60 text-amber-950 transition text-left">
+                  📖 全体（本の形）
+                </button>
+                <button type="button" data-cover-preset="right" class="cover-preset-btn px-2.5 py-2 rounded-xl font-bold text-xs border border-amber-400 bg-white hover:bg-amber-200/60 text-amber-950 transition text-left">
+                  👉 右半分のみ
+                </button>
+                <button type="button" data-cover-preset="left" class="cover-preset-btn px-2.5 py-2 rounded-xl font-bold text-xs border border-amber-400 bg-white hover:bg-amber-200/60 text-amber-950 transition text-left">
+                  👈 左半分のみ
+                </button>
+                <button type="button" data-cover-preset="custom" class="cover-preset-btn px-2.5 py-2 rounded-xl font-bold text-xs border border-amber-400 bg-white hover:bg-amber-200/60 text-amber-950 transition text-left">
+                  ✂️ 位置・拡大調整
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fine-tuning Sliders (Shown when right / left / custom is selected) -->
+          <div id="editCoverCustomControls" class="hidden space-y-2.5 pt-2 border-t border-amber-200 text-xs">
+            <div class="flex items-center justify-between gap-2">
+              <label for="editCoverAspectSelect" class="font-bold text-amber-900">表紙の枠の形</label>
+              <select id="editCoverAspectSelect" class="bg-white text-amber-950 rounded-lg px-2.5 py-1 border border-amber-400 font-bold">
+                <option value="3/4">縦長（ふつうの絵本 3:4）</option>
+                <option value="1/1">正方形（あかちゃん絵本 1:1）</option>
+                <option value="4/3">横長（よこなが絵本 4:3）</option>
+              </select>
+            </div>
+
+            <div>
+              <div class="flex justify-between font-bold text-amber-900 mb-0.5">
+                <span>左右の表示位置（ひだり ⇔ みぎ）</span>
+                <span id="editCoverPosXVal">50%</span>
+              </div>
+              <input id="editCoverPosX" type="range" min="0" max="100" step="1" value="50" class="w-full accent-amber-700" />
+            </div>
+
+            <div>
+              <div class="flex justify-between font-bold text-amber-900 mb-0.5">
+                <span>上下の表示位置（うえ ⇔ した）</span>
+                <span id="editCoverPosYVal">50%</span>
+              </div>
+              <input id="editCoverPosY" type="range" min="0" max="100" step="1" value="50" class="w-full accent-amber-700" />
+            </div>
+
+            <div>
+              <div class="flex justify-between font-bold text-amber-900 mb-0.5">
+                <span>表紙の拡大率（ズーム）</span>
+                <span id="editCoverZoomVal">100%</span>
+              </div>
+              <input id="editCoverZoom" type="range" min="100" max="220" step="5" value="100" class="w-full accent-amber-700" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label for="editBookTitleInput" class="block font-bold text-amber-900 mb-1">絵本のタイトル（検索用）</label>
+          <input id="editBookTitleInput" type="text" class="w-full bg-white text-amber-950 rounded-xl px-3.5 py-2 border border-amber-400 font-bold" />
+        </div>
+
+        <div>
+          <label for="editBookDirection" class="block font-bold text-amber-900 mb-1">めくり方向</label>
+          <select id="editBookDirection" class="w-full bg-white text-amber-950 rounded-xl px-3 py-2 border border-amber-400 font-semibold">
+            <option value="rtl">◀ 右開き（日本の絵本）</option>
+            <option value="ltr">▶ 左開き（横書き絵本）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 mt-5 pt-3.5 border-t border-amber-200">
+        <button id="btnDeleteBook" type="button" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-3.5 py-2.5 rounded-xl text-xs sm:text-sm transition">
+          🗑️ 本棚から削除
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="btnCancelEditBook" type="button" class="bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition">
+            キャンセル
+          </button>
+          <button id="btnSaveEditBook" type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs sm:text-sm shadow transition">
+            保存する
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: SETTINGS                                                       -->
+  <!-- ===================================================================== -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-40 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-amber-50 text-amber-950 rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border-4 border-amber-700 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg sm:text-xl font-extrabold flex items-center gap-2">
+          <span>⚙️</span>
+          <span>設定・データ管理</span>
+        </h2>
+        <button id="btnCloseSettingsModal" type="button" class="w-9 h-9 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <!-- Performance & Memory Settings -->
+      <div class="bg-white rounded-2xl p-4 border border-amber-300 space-y-4">
+        <div class="text-xs sm:text-sm">
+          <label for="appTitleInput" class="block font-bold text-amber-900 mb-1">📚 本棚のなまえ</label>
+          <input id="appTitleInput" type="text" maxlength="20" placeholder="わたしのほんだな" class="w-full bg-amber-100 text-amber-950 rounded-xl px-3 py-2 border border-amber-400 font-bold" />
+          <p class="text-amber-700 text-xs mt-1">この端末のブラウザに保存されます。空にすると「わたしのほんだな」にもどります。</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm pt-3 border-t border-amber-200">
+          <div>
+            <p class="font-bold text-amber-900">PDFレンダリング解像度</p>
+            <p class="text-amber-700 text-xs">大容量のスキャンPDFで動作が重い場合は「標準（省メモリ）」がおすすめです</p>
+          </div>
+          <select id="renderQualitySelect" class="bg-amber-100 text-amber-950 font-bold px-3 py-2 rounded-xl border border-amber-400">
+            <option value="standard">標準・省メモリ（推奨）</option>
+            <option value="high">高精細（くっきり表示）</option>
+          </select>
+        </div>
+
+        <div class="pt-3 border-t border-amber-200 text-xs sm:text-sm space-y-2">
+          <div>
+            <p class="font-bold text-amber-900">💾 バックアップ（書き出し・復元）</p>
+            <p class="text-amber-700 text-xs">本棚の絵本（PDF・表紙・お気に入り・読んだ回数）を1つのファイルに保存します。端末のデータが消えたときや、別の端末に引っ越すときに使えます。</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnExportBackup" type="button" class="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition">
+              📤 書き出す
+            </button>
+            <button id="btnImportBackup" type="button" class="bg-amber-200 hover:bg-amber-300 disabled:opacity-50 text-amber-950 font-bold px-3.5 py-2 rounded-xl text-xs transition">
+              📥 バックアップから復元
+            </button>
+          </div>
+          <p id="backupStatusText" class="text-amber-800 text-xs font-semibold min-h-[1rem]"></p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-amber-200 text-xs sm:text-sm">
+          <div>
+            <p class="font-bold text-amber-900">登録されている絵本データ</p>
+            <p id="storageStatusText" class="text-amber-700 text-xs">現在 0冊のPDF絵本が本棚に登録されています。</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnClearAllStorage" type="button" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-3.5 py-2 rounded-xl text-xs transition">
+              全データを削除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 hidden bg-stone-900/95 text-amber-100 px-4 py-3 rounded-2xl shadow-2xl border border-amber-500/50 text-xs sm:text-sm font-bold flex items-center gap-2 transition-all">
+    <span id="toastIcon">✨</span>
+    <span id="toastMessage">メッセージ</span>
+  </div>
+
+  <script>
+    const IS_PHONE = document.documentElement.classList.contains("phone");
+    const DEFAULT_TITLE = "わたしのほんだな";
+
+    // Configure PDF.js worker
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+
+    // =========================================================================
+    // 1. APPLICATION STATE & INDEXEDDB PERSISTENCE
+    // =========================================================================
+    const state = {
+      books: [],
+      pdfBlobs: new Map(), // id -> ArrayBuffer
+      filter: "all",
+      searchQuery: "",
+      sortBy: "recent",
+      shelfSize: "large", // "large" (おおきめ) | "normal" (ふつう) | "small" (ちいさめ)
+      theme: "wood", // "wood" | "white" | "night"
+      childMode: true,
+      title: "", // 本棚のなまえ（空ならデフォルト）
+      phoneReaderHintShown: false,
+      renderQuality: "standard",
+      editingBookId: null,
+      // Temporary cover edit state in modal
+      editCoverDraft: {
+        coverMode: "fit", // "fit" | "right" | "left" | "custom"
+        coverAspect: "3/4", // "3/4" | "1/1" | "4/3"
+        coverPosX: 50,
+        coverPosY: 50,
+        coverZoom: 100
+      },
+      // Reader state & offscreen page cache for zero-white-flash instant page turns
+      activeBook: null,
+      activePdfDoc: null,
+      currentPage: 1,
+      zoomLevel: 1.0,
+      renderSeq: 0,
+      pageCache: new Map() // pageNum -> { key, promise }
+    };
+
+    const DB_NAME = "FireHD10_EhonShelf_DB";
+    const DB_VERSION = 1;
+    let idbInstance = null;
+
+    function openDatabase() {
+      return new Promise((resolve) => {
+        try {
+          if (!window.indexedDB) {
+            resolve(null);
+            return;
+          }
+          const req = window.indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("books")) {
+              db.createObjectStore("books", { keyPath: "id" });
+            }
+            if (!db.objectStoreNames.contains("pdfFiles")) {
+              db.createObjectStore("pdfFiles", { keyPath: "id" });
+            }
+          };
+          req.onsuccess = (e) => {
+            idbInstance = e.target.result;
+            resolve(idbInstance);
+          };
+          req.onerror = () => resolve(null);
+        } catch (err) {
+          resolve(null);
+        }
+      });
+    }
+
+    async function saveBookToDB(bookMeta, pdfArrayBuffer) {
+      try {
+        if (!idbInstance) return;
+        const tx = idbInstance.transaction(["books", "pdfFiles"], "readwrite");
+        tx.objectStore("books").put(bookMeta);
+        if (pdfArrayBuffer) {
+          tx.objectStore("pdfFiles").put({ id: bookMeta.id, data: pdfArrayBuffer });
+        }
+      } catch (e) {}
+    }
+
+    async function deleteBookFromDB(bookId) {
+      try {
+        if (!idbInstance) return;
+        const tx = idbInstance.transaction(["books", "pdfFiles"], "readwrite");
+        tx.objectStore("books").delete(bookId);
+        tx.objectStore("pdfFiles").delete(bookId);
+      } catch (e) {}
+    }
+
+    async function loadAllBooksFromDB() {
+      try {
+        if (!idbInstance) return null;
+        return await new Promise((resolve) => {
+          const tx = idbInstance.transaction(["books"], "readonly");
+          const store = tx.objectStore("books");
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => resolve(null);
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function loadPdfDataFromDB(bookId) {
+      if (state.pdfBlobs.has(bookId)) {
+        return state.pdfBlobs.get(bookId);
+      }
+      try {
+        if (!idbInstance) return null;
+        return await new Promise((resolve) => {
+          const tx = idbInstance.transaction(["pdfFiles"], "readonly");
+          const req = tx.objectStore("pdfFiles").get(bookId);
+          req.onsuccess = () => {
+            if (req.result && req.result.data) {
+              state.pdfBlobs.set(bookId, req.result.data);
+              resolve(req.result.data);
+            } else {
+              resolve(null);
+            }
+          };
+          req.onerror = () => resolve(null);
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function savePrefsToLocal() {
+      try {
+        localStorage.setItem(
+          "ehon_shelf_prefs",
+          JSON.stringify({
+            shelfSize: state.shelfSize,
+            theme: state.theme,
+            renderQuality: state.renderQuality,
+            title: state.title
+          })
+        );
+      } catch (e) {}
+    }
+
+    function loadPrefsFromLocal() {
+      try {
+        const raw = localStorage.getItem("ehon_shelf_prefs");
+        if (!raw) return;
+        const p = JSON.parse(raw);
+        if (p.shelfSize && ["large", "normal", "small"].includes(p.shelfSize)) {
+          state.shelfSize = p.shelfSize;
+        }
+        if (p.theme) state.theme = p.theme;
+        if (p.renderQuality) state.renderQuality = p.renderQuality;
+        if (typeof p.title === "string") state.title = p.title.slice(0, 20);
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 2. TOAST NOTIFICATION HELPER
+    // =========================================================================
+    let toastTimer = null;
+    function showToast(message, icon = "✨") {
+      const toast = document.getElementById("toastNotification");
+      const iconEl = document.getElementById("toastIcon");
+      const msgEl = document.getElementById("toastMessage");
+      iconEl.textContent = icon;
+      msgEl.textContent = message;
+      toast.classList.remove("hidden");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 2800);
+    }
+
+    // =========================================================================
+    // 3. BOOKSHELF RENDERING (Natural Book Aspect Ratio + Crop/Position Support)
+    // =========================================================================
+    function getFilteredAndSortedBooks() {
+      const q = state.searchQuery.trim().toLowerCase();
+      const list = state.books.filter((b) => {
+        if (state.filter === "fav" && !b.favorite) return false;
+        if (q && !b.title.toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      list.sort((a, b) => {
+        if (state.sortBy === "title") {
+          return a.title.localeCompare(b.title, "ja");
+        }
+        if (state.sortBy === "added") {
+          return (b.addedAt || 0) - (a.addedAt || 0);
+        }
+        if (state.sortBy === "count") {
+          return (b.readCount || 0) - (a.readCount || 0);
+        }
+        return (b.lastReadAt || 0) - (a.lastReadAt || 0);
+      });
+
+      return list;
+    }
+
+    function computeBooksPerShelfRow() {
+      const w = window.innerWidth;
+      if (IS_PHONE && w < 640) {
+        // スマホ縦持ち：表紙を大きく見せるため列数を少なめに
+        return state.shelfSize === "large" ? 2 : state.shelfSize === "normal" ? 3 : 4;
+      }
+      if (state.shelfSize === "large") {
+        if (w < 640) return 3;
+        if (w < 960) return 4;
+        return 5;
+      } else if (state.shelfSize === "normal") {
+        if (w < 640) return 4;
+        if (w < 960) return 5;
+        return 6;
+      } else {
+        if (w < 640) return 5;
+        if (w < 960) return 6;
+        return 8;
+      }
+    }
+
+    function getGridColsClass(perRow) {
+      if (perRow === 2) return "grid-cols-2 gap-4";
+      if (perRow === 3) return "grid-cols-3 gap-4 sm:gap-6";
+      if (perRow === 4) return "grid-cols-4 gap-4 sm:gap-6";
+      if (perRow === 5) return "grid-cols-5 gap-3.5 sm:gap-5";
+      if (perRow === 6) return "grid-cols-6 gap-3 sm:gap-4";
+      return "grid-cols-8 gap-2.5 sm:gap-3.5";
+    }
+
+    function getCardMaxWidthClass() {
+      if (state.shelfSize === "large") return "max-w-[215px]";
+      if (state.shelfSize === "normal") return "max-w-[172px]";
+      return "max-w-[132px]";
+    }
+
+    function getBookMaxHeightPx() {
+      if (IS_PHONE) {
+        return state.shelfSize === "large" ? 190 : state.shelfSize === "normal" ? 150 : 115;
+      }
+      if (state.shelfSize === "large") return 235;
+      if (state.shelfSize === "normal") return 188;
+      return 142;
+    }
+
+    function getShelfMinHeightClass() {
+      if (state.shelfSize === "large") return "min-h-[175px] sm:min-h-[235px]";
+      if (state.shelfSize === "normal") return "min-h-[145px] sm:min-h-[190px]";
+      return "min-h-[115px] sm:min-h-[148px]";
+    }
+
+    // Build inline style & class for each book's cover based on its coverMode
+    function buildCoverDisplayProps(book, maxHeightPx) {
+      const mode = book.coverMode || "fit";
+      if (mode === "fit") {
+        return {
+          frameClass: "book-cover-frame fit-natural",
+          frameStyle: "",
+          imgStyle: `--shelf-book-max-h: ${maxHeightPx}px;`
+        };
+      }
+
+      const aspect = book.coverAspect || "3/4";
+      let posX = typeof book.coverPosX === "number" ? book.coverPosX : 50;
+      let posY = typeof book.coverPosY === "number" ? book.coverPosY : 50;
+      let zoom = typeof book.coverZoom === "number" ? book.coverZoom : 100;
+
+      if (mode === "right" && typeof book.coverPosX !== "number") posX = 100;
+      if (mode === "left" && typeof book.coverPosX !== "number") posX = 0;
+
+      const scaleVal = (zoom / 100).toFixed(2);
+      const transformStr = zoom > 100 ? `transform: scale(${scaleVal});` : "";
+
+      return {
+        frameClass: "book-cover-frame fit-crop",
+        frameStyle: `aspect-ratio: ${aspect}; max-height: ${maxHeightPx}px;`,
+        imgStyle: `object-position: ${posX}% ${posY}%; ${transformStr}`
+      };
+    }
+
+    function renderBookshelf() {
+      const container = document.getElementById("bookshelfContainer");
+      const emptyState = document.getElementById("emptyShelfState");
+      const badge = document.getElementById("totalBooksBadge");
+
+      badge.textContent = `${state.books.length}さつ`;
+
+      const filtered = getFilteredAndSortedBooks();
+      const perRow = computeBooksPerShelfRow();
+      const cardMaxW = getCardMaxWidthClass();
+      const maxHeightPx = getBookMaxHeightPx();
+      const shelfMinH = getShelfMinHeightClass();
+      const gridColsClass = getGridColsClass(perRow);
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove("hidden");
+        const resetBtn = document.getElementById("btnEmptyResetFilter");
+        if (state.filter === "all" && !state.searchQuery.trim()) {
+          resetBtn.classList.add("hidden");
+        } else {
+          resetBtn.classList.remove("hidden");
+        }
+      } else {
+        emptyState.classList.add("hidden");
+      }
+
+      // Split books into shelf rows; if the last row is full and we are in adult mode,
+      // add one more row at the bottom so the "＋ PDF絵本を追加" slot is always available.
+      const rows = [];
+      for (let i = 0; i < filtered.length; i += perRow) {
+        rows.push(filtered.slice(i, i + perRow));
+      }
+      if (rows.length === 0) {
+        rows.push([]);
+      } else if (!state.childMode && rows[rows.length - 1].length === perRow) {
+        rows.push([]);
+      }
+      if (rows.length === 1 && filtered.length <= perRow) {
+        rows.push([]);
+      }
+
+      container.innerHTML = rows
+        .map((rowBooks, rowIdx) => {
+          const cardsHtml = rowBooks
+            .map((book) => {
+              const coverProps = buildCoverDisplayProps(book, maxHeightPx);
+
+              return `
+                <div class="book-item flex flex-col items-center justify-end group" data-book-id="${book.id}">
+                  <div class="w-full ${cardMaxW} flex justify-center relative">
+                    <!-- Clean Book Cover Image (Natural aspect ratio or user-adjusted crop) -->
+                    <div class="${coverProps.frameClass}" style="${coverProps.frameStyle}" data-action="open-book" data-book-id="${book.id}">
+                      <!-- Corner Action Buttons anchored inside the cover frame -->
+                      <div class="absolute top-1.5 right-1.5 z-20 flex items-center gap-1">
+                        <button type="button" data-action="toggle-fav" data-book-id="${book.id}" aria-label="おきにいり" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/45 hover:bg-black/75 text-amber-300 flex items-center justify-center text-xs sm:text-sm shadow transition">
+                          ${book.favorite ? "★" : "☆"}
+                        </button>
+                        <button type="button" data-action="edit-book" data-book-id="${book.id}" aria-label="せってい" class="${
+                          state.childMode ? "hidden" : "flex"
+                        } w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/45 hover:bg-black/75 text-white items-center justify-center text-xs shadow transition">
+                          ✎
+                        </button>
+                      </div>
+
+                      <img src="${book.coverDataUrl}" alt="${escapeHtml(book.title)}" class="book-cover-img" style="${coverProps.imgStyle}" loading="lazy" />
+                    </div>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+
+          // Place the "+ Add PDF" slot in the first row that has space
+          const firstRowWithSpaceIdx = rows.findIndex((r) => r.length < perRow);
+          const showAddSlot = !state.childMode && rowIdx === firstRowWithSpaceIdx;
+
+          const addSlotHtml = showAddSlot
+            ? `
+              <div class="flex flex-col items-center justify-end pb-1">
+                <button type="button" data-action="open-add-modal" class="w-full ${cardMaxW} aspect-[3/4] rounded-xl border-2 border-dashed border-amber-700/45 hover:border-emerald-600 bg-white/45 hover:bg-white/75 flex flex-col items-center justify-center gap-1.5 p-2 text-amber-900 hover:text-emerald-800 transition group" style="max-height: ${maxHeightPx}px;">
+                  <span class="w-10 h-10 rounded-xl bg-amber-200/80 group-hover:bg-emerald-100 flex items-center justify-center text-xl font-bold shadow-sm">＋</span>
+                  <span class="font-extrabold text-[11px] sm:text-xs text-center leading-tight">PDF絵本を<br/>追加</span>
+                </button>
+              </div>
+            `
+            : "";
+
+          return `
+            <div class="shelf-unit">
+              <div class="grid ${gridColsClass} items-end ${shelfMinH} px-1 sm:px-3">
+                ${cardsHtml}
+                ${addSlotHtml}
+              </div>
+              <div class="shelf-rail"></div>
+              <div class="shelf-plank"></div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    // =========================================================================
+    // 4. PDF IMPORT & COVER EXTRACTION (pdf.js)
+    // =========================================================================
+    async function handlePdfFilesSelected(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      if (!window.pdfjsLib) {
+        showToast("PDFライブラリの読み込みを確認してください", "⚠️");
+        return;
+      }
+
+      const files = Array.from(fileList).filter(
+        (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
+      );
+      if (files.length === 0) {
+        showToast("PDFファイル（.pdf）をえらんでください", "⚠️");
+        return;
+      }
+
+      const progressBox = document.getElementById("importProgressBox");
+      const progressText = document.getElementById("importProgressText");
+      const progressPercent = document.getElementById("importProgressPercent");
+      const progressBar = document.getElementById("importProgressBar");
+
+      progressBox.classList.remove("hidden");
+      const defaultDir = document.getElementById("defaultDirectionSelect").value || "rtl";
+      const defaultCoverPref = document.getElementById("defaultCoverModeSelect").value || "fit";
+
+      let addedCount = 0;
+      let lastAddedBookId = null;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const pct = Math.round(((i + 0.2) / files.length) * 100);
+        progressText.textContent = `表紙を作成中 (${i + 1} / ${files.length}冊): ${file.name}`;
+        progressPercent.textContent = `${pct}%`;
+        progressBar.style.width = `${pct}%`;
+
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const storedBuffer = arrayBuffer.slice(0);
+
+          const loadingTask = window.pdfjsLib.getDocument({
+            data: new Uint8Array(arrayBuffer),
+            cMapUrl: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/",
+            cMapPacked: true
+          });
+          const pdfDoc = await loadingTask.promise;
+          const numPages = pdfDoc.numPages || 1;
+
+          const page1 = await pdfDoc.getPage(1);
+          const unscaledViewport = page1.getViewport({ scale: 1.0 });
+          const targetWidth = 460;
+          const scale = targetWidth / unscaledViewport.width;
+          const viewport = page1.getViewport({ scale });
+
+          const offCanvas = document.createElement("canvas");
+          offCanvas.width = Math.floor(viewport.width);
+          offCanvas.height = Math.floor(viewport.height);
+          const ctx = offCanvas.getContext("2d", { alpha: false });
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+
+          await page1.render({ canvasContext: ctx, viewport }).promise;
+          const coverDataUrl = offCanvas.toDataURL("image/jpeg", 0.85);
+
+          await pdfDoc.destroy();
+
+          const cleanTitle = file.name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ");
+          const bookId = "pdf-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+
+          let initCoverMode = "fit";
+          let initCoverPosX = 50;
+          if (defaultCoverPref === "right") {
+            initCoverMode = "right";
+            initCoverPosX = 100;
+          } else if (defaultCoverPref === "left") {
+            initCoverMode = "left";
+            initCoverPosX = 0;
+          } else if (defaultCoverPref === "custom_after") {
+            initCoverMode = "custom";
+          }
+
+          const newBook = {
+            id: bookId,
+            title: cleanTitle,
+            isSample: false,
+            favorite: false,
+            direction: defaultDir,
+            coverMode: initCoverMode,
+            coverAspect: "3/4",
+            coverPosX: initCoverPosX,
+            coverPosY: 50,
+            coverZoom: 100,
+            pageCount: numPages,
+            currentPage: 1,
+            readCount: 0,
+            addedAt: Date.now(),
+            lastReadAt: Date.now(),
+            coverDataUrl: coverDataUrl
+          };
+
+          state.books.unshift(newBook);
+          state.pdfBlobs.set(bookId, storedBuffer);
+          await saveBookToDB(newBook, storedBuffer);
+          addedCount++;
+          lastAddedBookId = bookId;
+        } catch (err) {
+          console.error("PDF import error:", err);
+          showToast(`「${file.name}」の読み込みに失敗しました`, "⚠️");
+        }
+      }
+
+      progressPercent.textContent = "100%";
+      progressBar.style.width = "100%";
+
+      setTimeout(() => {
+        progressBox.classList.add("hidden");
+        document.getElementById("addPdfModal").classList.add("hidden");
+        if (addedCount > 0 && defaultCoverPref === "custom_after" && lastAddedBookId) {
+          openEditBookModal(lastAddedBookId);
+        }
+      }, 360);
+
+      if (addedCount > 0) {
+        updateFilterTabStyles();
+        renderBookshelf();
+        updateStorageStatusText();
+        showToast(`${addedCount}さつの えほんを ほんだなに ならべました！`, "📚");
+      }
+    }
+
+    // =========================================================================
+    // 5. FAST DOUBLE-BUFFERED & PRE-RENDERED READER ENGINE (Zero White Flash)
+    // =========================================================================
+    function clearPageCache() {
+      state.pageCache.clear();
+    }
+
+    async function openBookInReader(bookId) {
+      const book = state.books.find((b) => b.id === bookId);
+      if (!book) return;
+
+      state.activeBook = book;
+      state.zoomLevel = 1.0;
+      clearPageCache();
+      book.lastReadAt = Date.now();
+
+      const overlay = document.getElementById("readerOverlay");
+      const spinner = document.getElementById("readerLoadingSpinner");
+      overlay.classList.remove("hidden");
+      overlay.classList.add("flex");
+      spinner.classList.remove("hidden");
+      document.getElementById("readerTopBar").classList.remove("hidden");
+      document.getElementById("readerBottomBar").classList.remove("hidden");
+      if (IS_PHONE && !state.phoneReaderHintShown) {
+        state.phoneReaderHintShown = true;
+        showToast(
+          state.childMode ? "がめんを タップすると メニューが でたり きえたり するよ" : "画面タップでメニューの表示/非表示を切り替えられます",
+          "👆"
+        );
+      }
+
+      document.getElementById("readerBookTitle").textContent = book.title;
+      document.getElementById("finishBookModal").classList.add("hidden");
+
+      state.currentPage = 1;
+      book.currentPage = 1;
+
+      try {
+        const pdfData = await loadPdfDataFromDB(book.id);
+        if (!pdfData) {
+          showToast(
+            state.childMode
+              ? "えほんの データが みつかりませんでした"
+              : "PDFデータが見つかりませんでした。再追加してください。",
+            "⚠️"
+          );
+          closeReader();
+          return;
+        }
+        const bufferCopy = pdfData.slice(0);
+        const loadingTask = window.pdfjsLib.getDocument({
+          data: new Uint8Array(bufferCopy),
+          cMapUrl: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/",
+          cMapPacked: true
+        });
+        state.activePdfDoc = await loadingTask.promise;
+        book.pageCount = state.activePdfDoc.numPages || book.pageCount;
+
+        updateReaderToolbarUI();
+        await renderCurrentReaderSpread();
+      } catch (err) {
+        console.error("Failed to open book:", err);
+        showToast(
+          state.childMode
+            ? "えほんを ひらけませんでした"
+            : "絵本を開く際にエラーが発生しました",
+          "⚠️"
+        );
+      } finally {
+        spinner.classList.add("hidden");
+      }
+    }
+
+    function closeReader() {
+      clearPageCache();
+      if (state.activePdfDoc) {
+        try {
+          state.activePdfDoc.destroy();
+        } catch (e) {}
+        state.activePdfDoc = null;
+      }
+      state.activeBook = null;
+      document.getElementById("readerTopBar").classList.remove("hidden");
+      document.getElementById("readerBottomBar").classList.remove("hidden");
+      const overlay = document.getElementById("readerOverlay");
+      overlay.classList.add("hidden");
+      overlay.classList.remove("flex");
+      renderBookshelf();
+    }
+
+    function getVisiblePagesPair(book, pageNum) {
+      const total = book.pageCount || 1;
+      const clamped = Math.max(1, Math.min(total, pageNum));
+      return [clamped];
+    }
+
+    function updateReaderToolbarUI() {
+      const book = state.activeBook;
+      if (!book) return;
+
+      const cm = state.childMode;
+
+      document.getElementById("closeReaderLabel").textContent = cm
+        ? "ほんだなに もどる"
+        : "本棚にもどる";
+
+      document.getElementById("zoomBtnLabel").textContent = `🔍 ${Math.round(
+        state.zoomLevel * 100
+      )}%`;
+
+      document.getElementById("restartBookLabel").textContent = cm
+        ? "さいしょの ページへ"
+        : "さいしょのページへ";
+      document.getElementById("readerDirectionHint").textContent = cm
+        ? "よこに スワイプして ページを めくってね"
+        : "左右にスワイプしてページをめくれます";
+      document.getElementById("readerFavIcon").textContent = book.favorite ? "★" : "☆";
+      document.getElementById("readerFavLabel").textContent = cm
+        ? "おきにいり"
+        : "お気に入り";
+    }
+
+    function getOrRenderPageBuffer(pdfDoc, pageNum) {
+      const stageEl = document.getElementById("readerViewport");
+      const cs = getComputedStyle(stageEl);
+      const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      const availW = Math.max(200, Math.floor(stageEl.clientWidth - padX - 2));
+      const availH = Math.max(160, Math.floor(stageEl.clientHeight - padY - 2));
+      const zoom = state.zoomLevel;
+      const modeKey = `F_${availW}x${availH}_${state.renderQuality}_${zoom}`;
+
+      const existing = state.pageCache.get(pageNum);
+      if (existing && existing.key === modeKey) {
+        return existing.promise;
+      }
+
+      const renderPromise = (async () => {
+        const page = await pdfDoc.getPage(pageNum);
+        const unscaled = page.getViewport({ scale: 1.0 });
+
+        const fitScale = Math.min(availW / unscaled.width, availH / unscaled.height) * zoom;
+        const qualityBoost = state.renderQuality === "high" ? 1.75 : 1.15;
+        const vp = page.getViewport({ scale: fitScale * qualityBoost });
+
+        const offCanvas = document.createElement("canvas");
+        offCanvas.width = Math.max(1, Math.floor(vp.width));
+        offCanvas.height = Math.max(1, Math.floor(vp.height));
+
+        const ctx = offCanvas.getContext("2d", { alpha: false });
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+
+        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+        return {
+          canvas: offCanvas,
+          cssW: Math.floor(unscaled.width * fitScale),
+          cssH: Math.floor(unscaled.height * fitScale)
+        };
+      })();
+
+      state.pageCache.set(pageNum, { key: modeKey, promise: renderPromise });
+      return renderPromise;
+    }
+
+    function blitBufferToScreenCanvas(bufferObj, targetCanvas) {
+      if (
+        targetCanvas.width !== bufferObj.canvas.width ||
+        targetCanvas.height !== bufferObj.canvas.height
+      ) {
+        targetCanvas.width = bufferObj.canvas.width;
+        targetCanvas.height = bufferObj.canvas.height;
+      }
+      targetCanvas.style.width = `${bufferObj.cssW}px`;
+      targetCanvas.style.height = `${bufferObj.cssH}px`;
+      const ctx = targetCanvas.getContext("2d", { alpha: false });
+      ctx.drawImage(bufferObj.canvas, 0, 0);
+    }
+
+    function prefetchAdjacentPages(book, pdfDoc, visiblePages) {
+      if (!book || !pdfDoc) return;
+      const total = book.pageCount || 1;
+      const firstVis = visiblePages[0];
+      const lastVis = visiblePages[visiblePages.length - 1];
+
+      for (const cachedPage of state.pageCache.keys()) {
+        if (Math.abs(cachedPage - firstVis) > 5) {
+          state.pageCache.delete(cachedPage);
+        }
+      }
+
+      const candidates = [];
+      if (lastVis + 1 <= total) {
+        candidates.push([lastVis + 1]);
+      }
+      if (firstVis - 1 >= 1) {
+        candidates.push([firstVis - 1]);
+      }
+
+      setTimeout(async () => {
+        for (const pair of candidates) {
+          if (state.activePdfDoc !== pdfDoc) return;
+          for (const pNum of pair) {
+            if (state.activePdfDoc !== pdfDoc) return;
+            try {
+              await getOrRenderPageBuffer(pdfDoc, pNum);
+            } catch (e) {}
+          }
+        }
+      }, 15);
+    }
+
+    async function renderCurrentReaderSpread() {
+      const book = state.activeBook;
+      const pdfDoc = state.activePdfDoc;
+      if (!book || !pdfDoc) return;
+
+      const mySeq = ++state.renderSeq;
+      const visiblePages = getVisiblePagesPair(book, state.currentPage);
+      state.currentPage = visiblePages[0];
+      book.currentPage = state.currentPage;
+      saveBookToDB(book, null);
+
+      const pageLabel = `${visiblePages[0]} / ${book.pageCount} ページ`;
+      document.getElementById("readerPageIndicator").textContent = pageLabel;
+      renderPageDotsBar(book, visiblePages);
+
+      document.getElementById("bookSpreadWrapper").style.transform = "";
+
+      const pageBuf = await getOrRenderPageBuffer(pdfDoc, visiblePages[0]);
+      if (mySeq !== state.renderSeq || state.activePdfDoc !== pdfDoc) return;
+
+      const primaryCanvas = document.getElementById("pdfCanvasPrimary");
+      blitBufferToScreenCanvas(pageBuf, primaryCanvas);
+
+      prefetchAdjacentPages(book, pdfDoc, visiblePages);
+    }
+
+    function renderPageDotsBar(book, visiblePages) {
+      const dotsBar = document.getElementById("readerPageDots");
+      const total = book.pageCount || 1;
+      const items = [];
+      for (let p = 1; p <= total; p++) {
+        const isCurrent = visiblePages.includes(p);
+        items.push(`
+          <button type="button" data-jump-page="${p}" class="min-w-[34px] h-8 px-2 rounded-lg font-extrabold text-xs transition ${
+            isCurrent
+              ? "bg-amber-400 text-amber-950 shadow scale-105"
+              : "bg-stone-800 hover:bg-stone-700 text-stone-300"
+          }">
+            ${p}
+          </button>
+        `);
+      }
+      dotsBar.innerHTML = items.join("");
+      dotsBar.classList.remove("flex-row-reverse");
+    }
+
+    function stepReaderPage(deltaSteps) {
+      const book = state.activeBook;
+      if (!book) return;
+
+      const visible = getVisiblePagesPair(book, state.currentPage);
+      if (deltaSteps > 0) {
+        const lastVisible = visible[visible.length - 1];
+        if (lastVisible >= book.pageCount) {
+          book.readCount = (book.readCount || 0) + 1;
+          book.currentPage = 1;
+          saveBookToDB(book, null);
+          document.getElementById("finishReadCount").textContent = `${book.readCount} かい`;
+          document.getElementById("finishBookModal").classList.remove("hidden");
+          return;
+        }
+        state.currentPage = lastVisible + 1;
+      } else {
+        const firstVisible = visible[0];
+        if (firstVisible <= 1) {
+          showToast("さいしょの ページです", "📖");
+          return;
+        }
+        state.currentPage = Math.max(1, firstVisible - 1);
+      }
+
+      renderCurrentReaderSpread();
+    }
+
+    // =========================================================================
+    // 6. COVER PREVIEW & EDIT MODAL HELPERS
+    // =========================================================================
+    function updateEditModalCoverPreview() {
+      const draft = state.editCoverDraft;
+      const frameEl = document.getElementById("editCoverPreviewFrame");
+      const imgEl = document.getElementById("editCoverPreviewImg");
+      const customBox = document.getElementById("editCoverCustomControls");
+
+      // Highlight active preset button
+      document.querySelectorAll(".cover-preset-btn").forEach((btn) => {
+        const preset = btn.getAttribute("data-cover-preset");
+        if (preset === draft.coverMode) {
+          btn.className =
+            "cover-preset-btn px-2.5 py-2 rounded-xl font-extrabold text-xs border-2 border-emerald-600 bg-emerald-100 text-emerald-950 shadow-sm transition text-left";
+        } else {
+          btn.className =
+            "cover-preset-btn px-2.5 py-2 rounded-xl font-bold text-xs border border-amber-400 bg-white hover:bg-amber-200/60 text-amber-950 transition text-left";
+        }
+      });
+
+      if (draft.coverMode === "fit") {
+        customBox.classList.add("hidden");
+      } else {
+        customBox.classList.remove("hidden");
+      }
+
+      document.getElementById("editCoverAspectSelect").value = draft.coverAspect || "3/4";
+      document.getElementById("editCoverPosX").value = draft.coverPosX;
+      document.getElementById("editCoverPosY").value = draft.coverPosY;
+      document.getElementById("editCoverZoom").value = draft.coverZoom;
+
+      document.getElementById("editCoverPosXVal").textContent = `${draft.coverPosX}%`;
+      document.getElementById("editCoverPosYVal").textContent = `${draft.coverPosY}%`;
+      document.getElementById("editCoverZoomVal").textContent = `${draft.coverZoom}%`;
+
+      const props = buildCoverDisplayProps(draft, 132);
+      frameEl.className = props.frameClass;
+      frameEl.style.cssText = props.frameStyle;
+      imgEl.style.cssText = props.imgStyle;
+    }
+
+    function openEditBookModal(bookId) {
+      const book = state.books.find((b) => b.id === bookId);
+      if (!book) return;
+      state.editingBookId = bookId;
+
+      state.editCoverDraft = {
+        coverMode: book.coverMode || "fit",
+        coverAspect: book.coverAspect || "3/4",
+        coverPosX: typeof book.coverPosX === "number" ? book.coverPosX : 50,
+        coverPosY: typeof book.coverPosY === "number" ? book.coverPosY : 50,
+        coverZoom: typeof book.coverZoom === "number" ? book.coverZoom : 100
+      };
+
+      document.getElementById("editCoverPreviewImg").src = book.coverDataUrl;
+      document.getElementById("editBookTitleInput").value = book.title;
+      document.getElementById("editBookDirection").value = book.direction || "rtl";
+
+      updateEditModalCoverPreview();
+      document.getElementById("editBookModal").classList.remove("hidden");
+    }
+
+    // =========================================================================
+    // 7. UI CONTROLS, CHILD MODE HIRAGANA/KATAKANA & EVENT LISTENERS
+    // =========================================================================
+    function applyThemeAndShelfUI() {
+      document.body.classList.remove("theme-white", "theme-night");
+      const themeIcon = document.getElementById("themeIcon");
+      const themeLabel = document.getElementById("themeLabel");
+      const cm = state.childMode;
+
+      if (state.theme === "white") {
+        document.body.classList.add("theme-white");
+        themeIcon.textContent = "☁️";
+        themeLabel.textContent = cm ? "しろ" : "ホワイト";
+      } else if (state.theme === "night") {
+        document.body.classList.add("theme-night");
+        themeIcon.textContent = "🌙";
+        themeLabel.textContent = "よるモード";
+      } else {
+        themeIcon.textContent = "🌲";
+        themeLabel.textContent = cm ? "もくめ" : "木目";
+      }
+
+      const sizeWord =
+        state.shelfSize === "large"
+          ? "おおきめ"
+          : state.shelfSize === "normal"
+          ? "ふつう"
+          : "ちいさめ";
+      document.getElementById("shelfSizeLabel").textContent = cm
+        ? `おおきさ: ${sizeWord}`
+        : `表紙: ${sizeWord}`;
+
+      document.getElementById("renderQualitySelect").value = state.renderQuality;
+    }
+
+    function applyChildModeUI() {
+      const cm = state.childMode;
+      const parentControls = document.querySelectorAll(".parent-only-control");
+      parentControls.forEach((el) => {
+        if (cm) {
+          el.classList.add("hidden");
+        } else {
+          el.classList.remove("hidden");
+        }
+      });
+
+      const icon = document.getElementById("childModeIcon");
+      const text = document.getElementById("childModeText");
+
+      if (cm) {
+        icon.textContent = "🔒";
+        text.textContent = "こどもモードちゅう";
+      } else {
+        icon.textContent = "🔓";
+        text.textContent = "こどもモードにする";
+      }
+
+      updateFsButtons();
+      document.getElementById("filterTabAll").textContent = "すべて";
+      document.getElementById("filterTabFav").textContent = cm ? "★ おきにいり" : "★ お気に入り";
+
+      document.getElementById("searchInput").placeholder = cm
+        ? "えほんを さがす..."
+        : "えほんのタイトルでさがす...";
+
+      document.getElementById("sortOptRecent").textContent = cm
+        ? "さいきん よんだ じゅん"
+        : "さいきん読んだ順";
+      document.getElementById("sortOptAdded").textContent = cm
+        ? "あたらしい じゅん"
+        : "追加した順";
+      document.getElementById("sortOptTitle").textContent = cm
+        ? "あいうえお じゅん"
+        : "あいうえお順";
+      document.getElementById("sortOptCount").textContent = cm
+        ? "よくよむ じゅん"
+        : "よく読む順";
+
+      document.getElementById("emptyShelfTitle").textContent = cm
+        ? "えほんが まだ ありません"
+        : "この棚にはまだ絵本がありません";
+      document.getElementById("emptyShelfDesc").textContent = cm
+        ? "おうちの ひとに えほんを いれてもらおう！"
+        : "条件に合う絵本が見つからないか、まだPDF絵本が追加されていません。";
+      document.getElementById("btnEmptyResetFilter").textContent = cm
+        ? "ぜんぶの えほんを みる"
+        : "すべての絵本を表示";
+
+      applyThemeAndShelfUI();
+      if (state.activeBook) {
+        updateReaderToolbarUI();
+      }
+      renderBookshelf();
+    }
+
+    function updateFilterTabStyles() {
+      const tabs = document.querySelectorAll("#categoryFilterBar .filter-tab");
+      tabs.forEach((btn) => {
+        const f = btn.getAttribute("data-filter");
+        if (f === state.filter) {
+          btn.className =
+            "filter-tab bg-amber-400 text-amber-950 font-extrabold px-3.5 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap shadow-sm transition";
+        } else {
+          btn.className =
+            "filter-tab bg-amber-900/70 hover:bg-amber-800 text-amber-100 font-bold px-3.5 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition";
+        }
+      });
+    }
+
+    function updateStorageStatusText() {
+      const statusEl = document.getElementById("storageStatusText");
+      statusEl.textContent = `現在 ${state.books.length}冊のPDF絵本が本棚に登録されています。`;
+    }
+
+    // Fullscreen（タブレット専用）: 1回タップで入る／同じボタンを2回タップで解除
+    let lastExitFullscreenTap = 0;
+    function fsElement() {
+      return document.fullscreenElement || document.webkitFullscreenElement || null;
+    }
+    function updateFsButtons() {
+      const on = !!fsElement();
+      const cm = state.childMode;
+      document.querySelectorAll(".fs-toggle").forEach((btn) => {
+        btn.querySelector(".fs-icon").textContent = on ? "✕" : "⛶";
+        btn.querySelector(".fs-label").textContent = on
+          ? cm ? "2かい トントン" : "2回タップで解除"
+          : cm ? "ぜんがめん" : "全画面";
+        btn.classList.toggle("fs-on", on);
+      });
+    }
+    function toggleFullscreenElement() {
+      if (IS_PHONE) return;
+      const de = document.documentElement;
+      const req = de.requestFullscreen || de.webkitRequestFullscreen;
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      const unsupported = () =>
+        showToast(
+          state.childMode ? "このたんまつは ぜんがめんに たいおう していません" : "全画面表示に対応していない環境です",
+          "ℹ️"
+        );
+      if (!req) {
+        unsupported();
+        return;
+      }
+      try {
+        if (!fsElement()) {
+          const p = req.call(de);
+          if (p && p.catch) p.catch(unsupported);
+        } else {
+          const now = Date.now();
+          if (now - lastExitFullscreenTap < 450) {
+            lastExitFullscreenTap = 0;
+            const p = exit && exit.call(document);
+            if (p && p.catch) p.catch(() => {});
+          } else {
+            lastExitFullscreenTap = now;
+            showToast(
+              state.childMode
+                ? "ぜんがめんを やめるときは おなじ ボタンを 2かい トントンしてね"
+                : "解除するには同じボタンをすばやく2回タップしてください",
+              "⛶"
+            );
+          }
+        }
+      } catch (e) {
+        unsupported();
+      }
+    }
+
+    // =========================================================================
+    // バックアップ（書き出し／復元）
+    // ファイル形式: "EHONSHF1"(8byte) + ヘッダ長(uint32 LE) + ヘッダJSON + 各PDFのバイナリ(順番に連結)
+    // =========================================================================
+    const BACKUP_MAGIC = "EHONSHF1";
+
+    function setBackupStatus(text) {
+      document.getElementById("backupStatusText").textContent = text || "";
+    }
+    function setBackupBusy(busy) {
+      document.getElementById("btnExportBackup").disabled = busy;
+      document.getElementById("btnImportBackup").disabled = busy;
+    }
+
+    // 書き出し用：メモリに溜め込まないようキャッシュせず読む
+    function readPdfRaw(bookId) {
+      if (state.pdfBlobs.has(bookId)) return Promise.resolve(state.pdfBlobs.get(bookId));
+      return new Promise((resolve) => {
+        try {
+          if (!idbInstance) return resolve(null);
+          const rq = idbInstance.transaction(["pdfFiles"], "readonly").objectStore("pdfFiles").get(bookId);
+          rq.onsuccess = () => resolve((rq.result && rq.result.data) || null);
+          rq.onerror = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+
+    // 復元用：書き込み完了まで待つ（容量不足などのエラーも拾う）
+    function putBookAwait(meta, buf) {
+      return new Promise((resolve, reject) => {
+        if (!idbInstance) return reject(new Error("no db"));
+        const tx = idbInstance.transaction(["books", "pdfFiles"], "readwrite");
+        tx.objectStore("books").put(meta);
+        tx.objectStore("pdfFiles").put({ id: meta.id, data: buf });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error || new Error("abort"));
+      });
+    }
+
+    async function exportBackup() {
+      if (state.books.length === 0) {
+        showToast("バックアップする絵本がありません", "ℹ️");
+        return;
+      }
+      setBackupBusy(true);
+      try {
+        const entries = [];
+        const bufs = [];
+        let missing = 0;
+        let totalBytes = 0;
+        for (let i = 0; i < state.books.length; i++) {
+          const b = state.books[i];
+          setBackupStatus(`準備中… (${i + 1} / ${state.books.length}冊)`);
+          const buf = await readPdfRaw(b.id);
+          if (!buf) {
+            missing++;
+            continue;
+          }
+          entries.push({ meta: b, size: buf.byteLength });
+          bufs.push(buf);
+          totalBytes += buf.byteLength;
+        }
+        if (entries.length === 0) {
+          showToast("PDFデータが見つかりませんでした", "⚠️");
+          setBackupStatus("");
+          return;
+        }
+        const header = {
+          app: "ehon-shelf",
+          version: 1,
+          exportedAt: Date.now(),
+          title: state.title || "",
+          books: entries
+        };
+        const headerBytes = new TextEncoder().encode(JSON.stringify(header));
+        const lenBuf = new ArrayBuffer(4);
+        new DataView(lenBuf).setUint32(0, headerBytes.byteLength, true);
+        const blob = new Blob([BACKUP_MAGIC, lenBuf, headerBytes, ...bufs], {
+          type: "application/octet-stream"
+        });
+
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        const fileName = `hondana-backup-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.ehon`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+        const mb = (totalBytes / 1024 / 1024).toFixed(1);
+        setBackupStatus(
+          `${entries.length}冊（約${mb}MB）を書き出しました。ダウンロードされたファイルを大切に保管してください。` +
+            (missing ? `（PDFが見つからない${missing}冊は含まれていません）` : "")
+        );
+        showToast("バックアップを書き出しました", "💾");
+      } catch (err) {
+        console.error("export error:", err);
+        setBackupStatus("書き出しに失敗しました。空き容量を確認してください。");
+        showToast("書き出しに失敗しました", "⚠️");
+      } finally {
+        setBackupBusy(false);
+      }
+    }
+
+    async function importBackup(file) {
+      if (!file) return;
+      setBackupBusy(true);
+      try {
+        if (file.size < 12) throw new Error("bad file");
+        const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+        const magic = String.fromCharCode.apply(null, head.slice(0, 8));
+        if (magic !== BACKUP_MAGIC) {
+          setBackupStatus("この本棚のバックアップファイルではありません。");
+          showToast("バックアップファイルではありません", "⚠️");
+          return;
+        }
+        const hlen = new DataView(head.buffer).getUint32(8, true);
+        if (hlen <= 0 || hlen > 200 * 1024 * 1024 || 12 + hlen > file.size) throw new Error("bad header");
+        const header = JSON.parse(new TextDecoder().decode(await file.slice(12, 12 + hlen).arrayBuffer()));
+        const list = Array.isArray(header.books) ? header.books : [];
+
+        let offset = 12 + hlen;
+        let added = 0;
+        let skipped = 0;
+        let failed = 0;
+        for (let i = 0; i < list.length; i++) {
+          const ent = list[i];
+          const meta = ent && ent.meta;
+          const size = ent && ent.size;
+          setBackupStatus(`復元中… (${i + 1} / ${list.length}冊)`);
+          if (!meta || typeof meta.id !== "string" || typeof size !== "number" || offset + size > file.size) {
+            failed++;
+            break;
+          }
+          if (state.books.some((b) => b.id === meta.id)) {
+            skipped++;
+            offset += size;
+            continue;
+          }
+          const buf = await file.slice(offset, offset + size).arrayBuffer();
+          offset += size;
+          try {
+            meta.isSample = false;
+            await putBookAwait(meta, buf);
+            state.books.push(meta);
+            added++;
+          } catch (err) {
+            console.error("restore error:", err);
+            failed++;
+          }
+        }
+
+        if (!state.title && typeof header.title === "string" && header.title) {
+          state.title = header.title.slice(0, 20);
+          savePrefsToLocal();
+          applyTitle();
+          document.getElementById("appTitleInput").value = state.title;
+        }
+
+        updateFilterTabStyles();
+        renderBookshelf();
+        updateStorageStatusText();
+        setBackupStatus(
+          `復元しました：追加 ${added}冊` +
+            (skipped ? ` ／ すでにある ${skipped}冊はそのまま` : "") +
+            (failed ? ` ／ 失敗 ${failed}冊（空き容量不足の可能性）` : "")
+        );
+        showToast(added > 0 ? `${added}さつ 復元しました` : "追加された絵本はありません", "📚");
+      } catch (err) {
+        console.error("import error:", err);
+        setBackupStatus("復元に失敗しました。ファイルが壊れているか、途中で切れている可能性があります。");
+        showToast("復元に失敗しました", "⚠️");
+      } finally {
+        setBackupBusy(false);
+      }
+    }
+
+    // 本棚のなまえ（この端末に保存）
+    function applyTitle() {
+      const t = (state.title || "").trim() || DEFAULT_TITLE;
+      document.getElementById("appTitle").textContent = t;
+      document.title = t;
+    }
+    function openSettings(focusTitle) {
+      updateStorageStatusText();
+      document.getElementById("appTitleInput").value = state.title || "";
+      setBackupStatus("");
+      document.getElementById("settingsModal").classList.remove("hidden");
+      if (focusTitle) setTimeout(() => document.getElementById("appTitleInput").focus(), 50);
+    }
+
+    // スマホ：画面タップでメニューを隠して本を大きく読む
+    function toggleReaderBars() {
+      const top = document.getElementById("readerTopBar");
+      const bottom = document.getElementById("readerBottomBar");
+      const hide = !top.classList.contains("hidden");
+      top.classList.toggle("hidden", hide);
+      bottom.classList.toggle("hidden", hide);
+      requestAnimationFrame(() => renderCurrentReaderSpread());
+    }
+
+    function setupEventListeners() {
+      const pdfInput = document.getElementById("pdfFileInput");
+
+      pdfInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handlePdfFilesSelected(e.target.files);
+          e.target.value = "";
+        }
+      });
+
+      document.getElementById("btnOpenAddModal").addEventListener("click", () => {
+        document.getElementById("addPdfModal").classList.remove("hidden");
+      });
+      document.getElementById("btnCloseAddModal").addEventListener("click", () => {
+        document.getElementById("addPdfModal").classList.add("hidden");
+      });
+      document.getElementById("btnModalPickFiles").addEventListener("click", (e) => {
+        e.stopPropagation();
+        pdfInput.click();
+      });
+      document.getElementById("modalDropArea").addEventListener("click", () => {
+        pdfInput.click();
+      });
+
+      // Drag and Drop PDF anywhere
+      const dropZone = document.getElementById("mainDropZone");
+      window.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (!state.childMode) dropZone.classList.add("drop-active");
+      });
+      window.addEventListener("dragleave", () => {
+        dropZone.classList.remove("drop-active");
+      });
+      window.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("drop-active");
+        if (state.childMode) return;
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handlePdfFilesSelected(e.dataTransfer.files);
+        }
+      });
+
+      // Shelf Size Cycle: large (おおきめ) -> normal (ふつう) -> small (ちいさめ)
+      document.getElementById("btnToggleShelfSize").addEventListener("click", () => {
+        const order = ["large", "normal", "small"];
+        const nextIdx = (order.indexOf(state.shelfSize) + 1) % order.length;
+        state.shelfSize = order[nextIdx];
+        savePrefsToLocal();
+        applyThemeAndShelfUI();
+        renderBookshelf();
+      });
+
+      // Theme Cycle
+      document.getElementById("btnCycleTheme").addEventListener("click", () => {
+        const order = ["wood", "white", "night"];
+        const nextIdx = (order.indexOf(state.theme) + 1) % order.length;
+        state.theme = order[nextIdx];
+        savePrefsToLocal();
+        applyThemeAndShelfUI();
+      });
+
+      document.getElementById("btnFullscreenApp").addEventListener("click", toggleFullscreenElement);
+      document.addEventListener("fullscreenchange", updateFsButtons);
+      document.addEventListener("webkitfullscreenchange", updateFsButtons);
+
+      // 本棚のなまえ編集（おとなモードのみ）
+      const titleInput = document.getElementById("appTitleInput");
+      titleInput.addEventListener("input", (e) => {
+        state.title = e.target.value.slice(0, 20);
+        savePrefsToLocal();
+        applyTitle();
+      });
+      titleInput.addEventListener("blur", () => {
+        state.title = state.title.trim();
+        savePrefsToLocal();
+        applyTitle();
+      });
+      ["appTitle", "titleEditHint"].forEach((id) => {
+        document.getElementById(id).addEventListener("click", () => {
+          if (!state.childMode) openSettings(true);
+        });
+      });
+      document.getElementById("btnReaderFullscreen").addEventListener("click", toggleFullscreenElement);
+
+      // Child Mode Toggle (2-second long press to unlock back to Adult Mode)
+      const childBtn = document.getElementById("btnToggleChildMode");
+      const holdBar = document.getElementById("childHoldProgressBar");
+      let childHoldTimer = null;
+      let childHoldCompleted = false;
+
+      function startChildUnlockHold(e) {
+        if (!state.childMode) return;
+        if (e.type === "mousedown" && e.button !== 0) return;
+        childHoldCompleted = false;
+        if (childHoldTimer) clearTimeout(childHoldTimer);
+
+        holdBar.style.transition = "width 2000ms linear";
+        holdBar.style.width = "100%";
+
+        childHoldTimer = setTimeout(() => {
+          childHoldTimer = null;
+          childHoldCompleted = true;
+          holdBar.style.transition = "none";
+          holdBar.style.width = "0%";
+          state.childMode = false;
+          applyChildModeUI();
+          showToast("🔓 おとなモードに戻りました", "✨");
+        }, 2000);
+      }
+
+      function cancelChildUnlockHold() {
+        if (!state.childMode) return;
+        if (childHoldTimer) {
+          clearTimeout(childHoldTimer);
+          childHoldTimer = null;
+          holdBar.style.transition = "none";
+          holdBar.style.width = "0%";
+          if (!childHoldCompleted) {
+            showToast("おとなモードに もどすときは 2びょう ながおし してね", "🔒");
+          }
+        }
+      }
+
+      childBtn.addEventListener("contextmenu", (e) => e.preventDefault());
+      childBtn.addEventListener("pointerdown", startChildUnlockHold);
+      childBtn.addEventListener("pointerup", cancelChildUnlockHold);
+      childBtn.addEventListener("pointerleave", cancelChildUnlockHold);
+      childBtn.addEventListener("pointercancel", cancelChildUnlockHold);
+
+      childBtn.addEventListener("click", () => {
+        if (childHoldCompleted) {
+          childHoldCompleted = false;
+          return;
+        }
+        if (!state.childMode) {
+          state.childMode = true;
+          applyChildModeUI();
+          showToast("🔒 こどもモードに なりました", "🧸");
+        }
+      });
+
+      // Settings Modal
+      document.getElementById("btnOpenSettingsModal").addEventListener("click", () => openSettings(false));
+      document.getElementById("btnCloseSettingsModal").addEventListener("click", () => {
+        document.getElementById("settingsModal").classList.add("hidden");
+      });
+      document.getElementById("renderQualitySelect").addEventListener("change", (e) => {
+        state.renderQuality = e.target.value;
+        clearPageCache();
+        savePrefsToLocal();
+        showToast(
+          state.renderQuality === "standard"
+            ? "標準（省メモリ）に設定しました"
+            : "高精細モードに設定しました",
+          "⚙️"
+        );
+      });
+
+      // バックアップ
+      const backupInput = document.getElementById("backupFileInput");
+      document.getElementById("btnExportBackup").addEventListener("click", exportBackup);
+      document.getElementById("btnImportBackup").addEventListener("click", () => backupInput.click());
+      backupInput.addEventListener("change", (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (f) importBackup(f);
+        e.target.value = "";
+      });
+
+      document.getElementById("btnClearAllStorage").addEventListener("click", async () => {
+        if (!confirm("本棚の絵本をすべて削除します。元に戻せません。よろしいですか？\n（先にバックアップの書き出しをおすすめします）")) return;
+        state.books = [];
+        state.pdfBlobs.clear();
+        try {
+          if (idbInstance) {
+            const tx = idbInstance.transaction(["books", "pdfFiles"], "readwrite");
+            tx.objectStore("books").clear();
+            tx.objectStore("pdfFiles").clear();
+          }
+        } catch (e) {}
+        renderBookshelf();
+        updateStorageStatusText();
+        document.getElementById("settingsModal").classList.add("hidden");
+        showToast("本棚のデータをすべて削除しました", "🗑️");
+      });
+
+      // Category Filters (Clicking active filter a 2nd time deselects it back to "all")
+      document.getElementById("categoryFilterBar").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-filter]");
+        if (!btn) return;
+        const clickedFilter = btn.getAttribute("data-filter");
+        if (clickedFilter !== "all" && state.filter === clickedFilter) {
+          state.filter = "all";
+        } else {
+          state.filter = clickedFilter;
+        }
+        updateFilterTabStyles();
+        renderBookshelf();
+      });
+
+      document.getElementById("searchInput").addEventListener("input", (e) => {
+        state.searchQuery = e.target.value;
+        renderBookshelf();
+      });
+
+      document.getElementById("sortSelect").addEventListener("change", (e) => {
+        state.sortBy = e.target.value;
+        renderBookshelf();
+      });
+
+      document.getElementById("btnEmptyResetFilter").addEventListener("click", () => {
+        state.filter = "all";
+        state.searchQuery = "";
+        document.getElementById("searchInput").value = "";
+        updateFilterTabStyles();
+        renderBookshelf();
+      });
+
+      document.getElementById("btnEmptyAddPdf").addEventListener("click", () => {
+        document.getElementById("addPdfModal").classList.remove("hidden");
+      });
+
+      // Bookshelf Card Delegation
+      document.getElementById("bookshelfContainer").addEventListener("click", (e) => {
+        const actionBtn = e.target.closest("[data-action]");
+        if (!actionBtn) return;
+        const action = actionBtn.getAttribute("data-action");
+        const bookId = actionBtn.getAttribute("data-book-id");
+
+        if (action === "toggle-fav") {
+          e.stopPropagation();
+          const book = state.books.find((b) => b.id === bookId);
+          if (book) {
+            book.favorite = !book.favorite;
+            saveBookToDB(book, null);
+            renderBookshelf();
+            showToast(
+              book.favorite ? "★ おきにいりに いれました" : "おきにいりを はずしました",
+              "⭐"
+            );
+          }
+        } else if (action === "edit-book") {
+          e.stopPropagation();
+          openEditBookModal(bookId);
+        } else if (action === "open-add-modal") {
+          document.getElementById("addPdfModal").classList.remove("hidden");
+        } else if (action === "open-book") {
+          openBookInReader(bookId);
+        }
+      });
+
+      // Cover Adjuster Controls inside Edit Book Modal
+      document.querySelectorAll(".cover-preset-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const preset = btn.getAttribute("data-cover-preset");
+          state.editCoverDraft.coverMode = preset;
+          if (preset === "right") {
+            state.editCoverDraft.coverPosX = 100;
+            state.editCoverDraft.coverPosY = 50;
+            state.editCoverDraft.coverZoom = 100;
+          } else if (preset === "left") {
+            state.editCoverDraft.coverPosX = 0;
+            state.editCoverDraft.coverPosY = 50;
+            state.editCoverDraft.coverZoom = 100;
+          }
+          updateEditModalCoverPreview();
+        });
+      });
+
+      document.getElementById("editCoverAspectSelect").addEventListener("change", (e) => {
+        state.editCoverDraft.coverAspect = e.target.value;
+        updateEditModalCoverPreview();
+      });
+
+      document.getElementById("editCoverPosX").addEventListener("input", (e) => {
+        state.editCoverDraft.coverPosX = parseInt(e.target.value, 10) || 0;
+        if (state.editCoverDraft.coverMode === "fit") {
+          state.editCoverDraft.coverMode = "custom";
+        }
+        updateEditModalCoverPreview();
+      });
+
+      document.getElementById("editCoverPosY").addEventListener("input", (e) => {
+        state.editCoverDraft.coverPosY = parseInt(e.target.value, 10) || 0;
+        if (state.editCoverDraft.coverMode === "fit") {
+          state.editCoverDraft.coverMode = "custom";
+        }
+        updateEditModalCoverPreview();
+      });
+
+      document.getElementById("editCoverZoom").addEventListener("input", (e) => {
+        state.editCoverDraft.coverZoom = parseInt(e.target.value, 10) || 100;
+        if (state.editCoverDraft.coverMode === "fit") {
+          state.editCoverDraft.coverMode = "custom";
+        }
+        updateEditModalCoverPreview();
+      });
+
+      // Edit Book Modal Actions
+      document.getElementById("btnCloseEditModal").addEventListener("click", () => {
+        document.getElementById("editBookModal").classList.add("hidden");
+      });
+      document.getElementById("btnCancelEditBook").addEventListener("click", () => {
+        document.getElementById("editBookModal").classList.add("hidden");
+      });
+      document.getElementById("btnSaveEditBook").addEventListener("click", async () => {
+        const book = state.books.find((b) => b.id === state.editingBookId);
+        if (!book) return;
+        const newTitle = document.getElementById("editBookTitleInput").value.trim();
+        if (newTitle) book.title = newTitle;
+        book.direction = document.getElementById("editBookDirection").value;
+
+        book.coverMode = state.editCoverDraft.coverMode;
+        book.coverAspect = state.editCoverDraft.coverAspect;
+        book.coverPosX = state.editCoverDraft.coverPosX;
+        book.coverPosY = state.editCoverDraft.coverPosY;
+        book.coverZoom = state.editCoverDraft.coverZoom;
+
+        await saveBookToDB(book, null);
+        document.getElementById("editBookModal").classList.add("hidden");
+        renderBookshelf();
+        showToast("表紙と絵本のせっていを保存しました", "✅");
+      });
+
+      document.getElementById("btnDeleteBook").addEventListener("click", async () => {
+        const id = state.editingBookId;
+        if (!id) return;
+        state.books = state.books.filter((b) => b.id !== id);
+        state.pdfBlobs.delete(id);
+        await deleteBookFromDB(id);
+        document.getElementById("editBookModal").classList.add("hidden");
+        renderBookshelf();
+        updateStorageStatusText();
+        showToast("本棚から絵本を削除しました", "🗑️");
+      });
+
+      // Reader Controls
+      document.getElementById("btnCloseReader").addEventListener("click", closeReader);
+
+      document.getElementById("btnCycleZoom").addEventListener("click", () => {
+        const levels = [1.0, 1.35, 1.75];
+        const idx = levels.indexOf(state.zoomLevel);
+        state.zoomLevel = levels[(idx + 1) % levels.length];
+        clearPageCache();
+        updateReaderToolbarUI();
+        renderCurrentReaderSpread();
+      });
+
+
+
+      // Touch Swipe Support inside Reader Viewport:
+      // Right-opening (rtl): Swipe Right-to-Left (dx < 0) -> Next (+1), Swipe Left-to-Right (dx > 0) -> Prev (-1)
+      let touchStartX = null;
+      let touchStartY = null;
+      let touchStartT = 0;
+      const viewportEl = document.getElementById("readerViewport");
+
+      viewportEl.addEventListener(
+        "touchstart",
+        (e) => {
+          if (e.touches.length === 1 && state.zoomLevel === 1.0) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchStartT = Date.now();
+          }
+        },
+        { passive: true }
+      );
+
+      viewportEl.addEventListener(
+        "touchend",
+        (e) => {
+          if (touchStartX === null || state.zoomLevel !== 1.0 || !state.activeBook) return;
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          touchStartX = null;
+          touchStartY = null;
+
+          if (IS_PHONE && Math.abs(dx) < 10 && Math.abs(dy) < 10 && Date.now() - touchStartT < 350) {
+            toggleReaderBars();
+            return;
+          }
+
+          if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+            const isRtl = state.activeBook.direction === "rtl";
+            if (dx < 0) {
+              stepReaderPage(isRtl ? 1 : -1);
+            } else {
+              stepReaderPage(isRtl ? -1 : 1);
+            }
+          }
+        },
+        { passive: true }
+      );
+
+      // Page Dots Jump
+      document.getElementById("readerPageDots").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-jump-page]");
+        if (!btn || !state.activeBook) return;
+        state.currentPage = parseInt(btn.getAttribute("data-jump-page"), 10) || 1;
+        renderCurrentReaderSpread();
+      });
+
+      document.getElementById("btnRestartBook").addEventListener("click", () => {
+        if (!state.activeBook) return;
+        state.currentPage = 1;
+        renderCurrentReaderSpread();
+      });
+
+      document.getElementById("btnReaderFavorite").addEventListener("click", () => {
+        if (!state.activeBook) return;
+        state.activeBook.favorite = !state.activeBook.favorite;
+        saveBookToDB(state.activeBook, null);
+        updateReaderToolbarUI();
+        showToast(
+          state.activeBook.favorite
+            ? "★ おきにいりに いれました"
+            : "おきにいりを はずしました",
+          "⭐"
+        );
+      });
+
+      // Finish Book Modal Actions
+      document.getElementById("btnFinishReadAgain").addEventListener("click", () => {
+        document.getElementById("finishBookModal").classList.add("hidden");
+        state.currentPage = 1;
+        renderCurrentReaderSpread();
+      });
+
+      document.getElementById("btnFinishBackShelf").addEventListener("click", () => {
+        document.getElementById("finishBookModal").classList.add("hidden");
+        closeReader();
+      });
+
+      // Keyboard Arrow Support
+      window.addEventListener("keydown", (e) => {
+        if (!state.activeBook) return;
+        if (e.key === "Escape") {
+          closeReader();
+        } else if (e.key === "ArrowLeft") {
+          const isRtl = state.activeBook.direction === "rtl";
+          stepReaderPage(isRtl ? -1 : 1);
+        } else if (e.key === "ArrowRight") {
+          const isRtl = state.activeBook.direction === "rtl";
+          stepReaderPage(isRtl ? 1 : -1);
+        }
+      });
+
+      // Responsive Resize Handler
+      let resizeTimer = null;
+      window.addEventListener("resize", () => {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          renderBookshelf();
+          if (state.activeBook) {
+            renderCurrentReaderSpread();
+          }
+        }, 180);
+      });
+    }
+
+    // =========================================================================
+    // 8. INITIALIZATION
+    // =========================================================================
+    async function initApp() {
+      loadPrefsFromLocal();
+      applyTitle();
+      applyChildModeUI();
+      try {
+        if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+      } catch (e) {}
+      setupEventListeners();
+
+      await openDatabase();
+      const storedBooks = await loadAllBooksFromDB();
+
+      if (storedBooks && storedBooks.length > 0) {
+        const userBooks = [];
+        for (const b of storedBooks) {
+          if (b.isSample) {
+            await deleteBookFromDB(b.id);
+          } else {
+            userBooks.push(b);
+          }
+        }
+        state.books = userBooks;
+      } else {
+        state.books = [];
+      }
+
+      renderBookshelf();
+      updateStorageStatusText();
+    }
+
+    window.addEventListener("DOMContentLoaded", initApp);
+  </script>
+</body>
+</html>
